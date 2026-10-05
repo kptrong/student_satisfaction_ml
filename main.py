@@ -15,6 +15,7 @@ def print_distribution(name, labels):
 
 
 def main():
+    
     # Bảo đảm console Windows in được tên nhãn tiếng Việt.
     sys.stdout.reconfigure(encoding="utf-8")
     X, y = load_dataset()
