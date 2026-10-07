@@ -7,6 +7,9 @@ from src.preprocessing import (
     DataPreprocessor,
     train_test_split_stratified
 )
+import numpy as np
+import pandas as pd
+from src.metrics import evaluate_classification
 
 def print_distribution(name, labels):
     """In số lượng và tỷ lệ phần trăm của từng lớp."""
@@ -32,33 +35,14 @@ def main():
         random_state=42
     )
 
-    print("X.shape:", X.shape)
-    print("y.shape:", y.shape)
-    print("Features gốc:", X.columns.tolist())
-    print("LABEL_NAMES:", LABEL_NAMES)
-
-    print("\nKích thước sau chia dữ liệu:")
-    print("X_train.shape:", X_train.shape)
-    print("X_test.shape: ", X_test.shape)
-    print("y_train.shape:", y_train.shape)
-    print("y_test.shape: ", y_test.shape)
-
     # Chỉ fit preprocessing trên train; test chỉ được transform
     preprocessor = DataPreprocessor(
         categorical_cols=CATEGORICAL_COLUMNS,
         numeric_cols=NUMERIC_COLUMNS
     )
-
     X_train_processed = preprocessor.fit_transform(X_train)
     X_test_processed = preprocessor.transform(X_test)
 
-    print("\nKích thước sau preprocessing:")
-    print("X_train_processed.shape:", X_train_processed.shape)
-    print("X_test_processed.shape: ", X_test_processed.shape)
-    print(
-        "Features sau preprocessing:",
-        preprocessor.get_feature_names_out()
-    )
 
     # Numeric nằm sau toàn bộ phần one-hot trong ma trận output
     n_onehot = len(preprocessor.encoder.get_feature_names_out())
@@ -68,10 +52,35 @@ def main():
         "Mean": train_numeric.mean(axis=0),
         "Std": train_numeric.std(axis=0, ddof=0)
     }, index=NUMERIC_COLUMNS)
+    
+    # Kiểm tra metrics bằng dữ liệu demo, chưa dùng model thật.
+    y_true_demo = np.array([0, 0, 1, 1, 2, 2])
+    y_pred_demo = np.array([0, 1, 1, 1, 2, 0])
 
-    print("\nThống kê numeric trên TRAIN sau chuẩn hóa:")
-    print(numeric_stats.round(6).to_string())
+    demo_result = evaluate_classification(
+        y_true_demo,
+        y_pred_demo,
+        labels=[0, 1, 2]
+    )
 
+    print("\nKiểm tra classification metrics:")
+    print("Thứ tự nhãn:", demo_result["labels"])
+    print("Confusion Matrix:")
+    print(demo_result["confusion_matrix"])
+
+    print(f"Accuracy:        {demo_result['accuracy']:.4f}")
+    print(f"Precision macro: {demo_result['precision_macro']:.4f}")
+    print(f"Recall macro:    {demo_result['recall_macro']:.4f}")
+    print(f"F1 macro:        {demo_result['f1_macro']:.4f}")
+
+    per_class_df = pd.DataFrame.from_dict(
+        demo_result["per_class"],
+        orient="index"
+    )
+    per_class_df.index.name = "Class"
+
+    print("\nMetric từng class:")
+    print(per_class_df.round(4).to_string())
 
 if __name__ == "__main__":
     main()
